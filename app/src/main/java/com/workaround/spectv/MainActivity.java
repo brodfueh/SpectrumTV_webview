@@ -77,7 +77,7 @@ public class MainActivity extends FragmentActivity  {
                      $('.site-footer').attr('style', 'display: none');
                      if (Spectv.channelIsQueued()) {
                         Spectv.MyDebug('channel is queued, clear loopvar running playerInitJS');
-                        clearInterval(loopVar)
+                        clearInterval(loopVar);
                      };
                      Spectv.MyDebug('about to check video length running playerInitJS');
                      if ($('video')?.length > 0) {
@@ -124,14 +124,15 @@ public class MainActivity extends FragmentActivity  {
                   Spectv.setSpecPlayerReady();
                };
               
-               function toggleGuide(s) { Spectv.channelGuide(s) }              
+               function toggleGuide(s) { Spectv.channelGuide(s) };
                function toggleMiniGuide(s) { Spectv.channelGuide(s) };
               
                // check if video is ready, when ready create the guide database
                // if required
                var loopActiveDB = setInterval(function() {
                   try {
-                     if ($('video')[0].readyState == 4) {
+                     var vready = $('video')[0].readyState;
+                     if (vready && vready == 4) {
                         Spectv.MyDebug('loopActiveDB,  build guide db if needed');
                         Spectv.sortMiniGuide();
                         clearInterval(loopActiveDB);
@@ -157,7 +158,7 @@ public class MainActivity extends FragmentActivity  {
                         }
                      }
                   } catch (e) { console.log('ERROR in miniguide monitoring', e); }
-               }, 1000);  
+               }, 1000);
                */
             """;
 
@@ -234,7 +235,7 @@ public class MainActivity extends FragmentActivity  {
                         "\n Found " +  guideManager.numberOfChannels() + " channels",
                 Toast.LENGTH_LONG).show();
 
-        chNumTextView = (TextView) findViewById(R.id.chNumTextView);
+        chNumTextView = findViewById(R.id.chNumTextView);
         initGuide();
         spectrumGuide.addJavascriptInterface(this, "Spectv");
         initPlayer();
@@ -389,7 +390,7 @@ private String[] parseIntentFilter(Intent intent) {
 
             //  add  keyboard interface
             if (event.getKeyCode() >= KeyEvent.KEYCODE_0 && event.getKeyCode() <= KeyEvent.KEYCODE_9) {
-                MyDebug("KEYCODE EVENT " + Character.toString((char) event.getUnicodeChar()));
+                MyDebug("KEYCODE EVENT " + (char) event.getUnicodeChar());
                 String chNumText = chNumTextView.getText() + Character.toString((char) event.getUnicodeChar());
                 chNumTextView.setText(chNumText);
                 return true;
@@ -459,7 +460,7 @@ private String[] parseIntentFilter(Intent intent) {
                 return true;
             }
 
-            MyDebug("Not handled key event down " + String.valueOf(event.getKeyCode()));
+            MyDebug("Not handled key event down " + event.getKeyCode());
         }
 
         return super.dispatchKeyEvent(event);
@@ -771,7 +772,7 @@ private String[] parseIntentFilter(Intent intent) {
     }
 
     private void initPlayer() {
-        spectrumPlayer = (WebView) findViewById(R.id.spectv);
+        spectrumPlayer = findViewById(R.id.spectv);
 
     //    spectrumPlayer.clearCache(true);
         spectrumPlayer.setWebChromeClient(new WebChromeClient() {
