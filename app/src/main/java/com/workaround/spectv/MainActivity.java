@@ -32,7 +32,7 @@ public class MainActivity extends FragmentActivity  {
     final String guideUrl = "https://watch.spectrum.net/guide";
     final String baseLiveChannelURL = "https://watch.spectrum.net/livetv?tmsid=";
     final String newSessionURL = "https://watch.spectrum.net/?sessionOverride=true";
-    final String DEFAULTCHANNEL = "1";
+    String DEFAULTCHANNEL = "0";
     final Boolean DEBUGON = true;
     Boolean specPlayerReady = false;
     String specPlayerQueue = "";
@@ -217,6 +217,9 @@ public class MainActivity extends FragmentActivity  {
         // load the miniguide cache
         guideManager = new GuideManager(this);
         guideManager.readMiniGuideCache();
+        if (guideManager.guideCacheIsReady()) {
+            DEFAULTCHANNEL = guideManager.getDefaultChannel();
+        }
 
         String curchnum = "";
         String[] data = parseIntentFilter(getIntent());
@@ -483,6 +486,12 @@ private String[] parseIntentFilter(Intent intent) {
 
     private void scrollToMiniGuideChannel(String chnum, String tsmid) {
         MyDebug("Starting  scrollToMiniGuideChannel " + chnum);
+        if (!guideManager.guideCacheIsReady()) {
+            MyDebug("Error  scrollToMiniGuideChannel - MiniGuide NOT AVAILABLE");
+            Toast.makeText(getBaseContext(), "MiniGuide NOT AVAILABLE",
+                    Toast.LENGTH_LONG).show();
+            return;
+        }
         EpgMapData mapdata = guideManager.getGuideEntry(chnum);
         String offset = mapdata.offset;
         String cssid = mapdata.cssid;
@@ -908,6 +917,7 @@ private String[] parseIntentFilter(Intent intent) {
                     // open the miniguide
                     MyDebug("  sortMiniGuide - about to SORT  miniguide ");
                     chNumTextView.setTextColor(Color.GREEN);
+                    chNumTextView.setBackgroundColor(Color.WHITE);
                     chNumTextView.setText("Scanning MiniGuide");
                     spectrumPlayer.evaluateJavascript(sortMiniGuideJS, null);
                 }
@@ -1009,6 +1019,7 @@ private String[] parseIntentFilter(Intent intent) {
                 public void run() {
                     chNumTextView.setTextColor(Color.WHITE);
                     chNumTextView.setText("");
+                    chNumTextView.setBackgroundColor(Color.TRANSPARENT);
                 }
             });
         } catch (Exception e) {

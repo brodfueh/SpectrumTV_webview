@@ -107,6 +107,11 @@ public class GuideManager {
         }
     }
 
+    public String getDefaultChannel() {
+        EpgMapData node = guideHashMap.get(guideHashMap.get(ROOTNODE).nextChNum);
+        return node.chnum;
+    }
+
     public String getAvailableChnum(String chnum) {
         EpgMapData node = guideHashMap.get(guideHashMap.get(ROOTNODE).nextChNum);
         // walk the channels and find a substitute channel
@@ -181,6 +186,12 @@ public class GuideManager {
             miniGuideBuffer.put(ROOTNODE,root);
             // set guide hashmap to miniguide buffer all done
             guideHashMap = miniGuideBuffer;
+
+            // set default channel to rootnode , nextChnum
+            sharedPrefEdit.putString("currentChannel", root.nextChNum);
+            sharedPrefEdit.putString("prevChannel", root.nextChNum);
+            sharedPrefEdit.apply();
+
             guideCacheIsReady = true;
             MyDebug("merged mini buffer size =" + String.valueOf(miniGuideBuffer.size()));
             myDebugDump();
