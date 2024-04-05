@@ -340,6 +340,7 @@ private String[] parseIntentFilter(Intent intent) {
     @SuppressLint("RestrictedApi")
     @Override
     public boolean dispatchKeyEvent(KeyEvent event) {
+
         // Handle key events to consistently bring up the mini channel guide
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
             if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP && spectrumGuide.getVisibility() == View.GONE && !miniGuideIsShowing) {
@@ -356,6 +357,12 @@ private String[] parseIntentFilter(Intent intent) {
 //                        spectrumPlayer.evaluateJavascript("toggleGuide('SHOW');", null);
 //                    }
 //                });
+                if (!guideManager.guideCacheIsReady()) {
+                    MyDebug("Error  dispatchKeyEvent - Guide NOT AVAILABLE");
+                    Toast.makeText(getBaseContext(), "Guide NOT AVAILABLE",
+                            Toast.LENGTH_LONG).show();
+                    return true;
+                }
                 spectrumPlayer.evaluateJavascript("toggleGuide('SHOWGUIDE');", null);
 //              scroll Guide to current channel playing
                 String curchannel = sharedPref.getString("currentChannel",DEFAULTCHANNEL);
@@ -380,6 +387,13 @@ private String[] parseIntentFilter(Intent intent) {
             }
 
             if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_RIGHT && spectrumGuide.getVisibility() == View.GONE) {
+                // ignore keyevent until app is ready, ie. miniguide data is loaded
+                if (!guideManager.guideCacheIsReady()) {
+                    MyDebug("Error  dispatchKeyEvent - MiniGuide NOT AVAILABLE");
+                    Toast.makeText(getBaseContext(), "MiniGuide NOT AVAILABLE",
+                            Toast.LENGTH_LONG).show();
+                    return true;
+                }
                 if (miniGuideIsShowing) {
                     toggleMiniGuideWindow("CLOSE");
                 } else {
@@ -486,12 +500,6 @@ private String[] parseIntentFilter(Intent intent) {
 
     private void scrollToMiniGuideChannel(String chnum, String tsmid) {
         MyDebug("Starting  scrollToMiniGuideChannel " + chnum);
-        if (!guideManager.guideCacheIsReady()) {
-            MyDebug("Error  scrollToMiniGuideChannel - MiniGuide NOT AVAILABLE");
-            Toast.makeText(getBaseContext(), "MiniGuide NOT AVAILABLE",
-                    Toast.LENGTH_LONG).show();
-            return;
-        }
         EpgMapData mapdata = guideManager.getGuideEntry(chnum);
         String offset = mapdata.offset;
         String cssid = mapdata.cssid;
@@ -916,7 +924,7 @@ private String[] parseIntentFilter(Intent intent) {
 
                     // open the miniguide
                     MyDebug("  sortMiniGuide - about to SORT  miniguide ");
-                    chNumTextView.setTextColor(Color.GREEN);
+                    chNumTextView.setTextColor(Color.BLACK);
                     chNumTextView.setBackgroundColor(Color.WHITE);
                     chNumTextView.setText("Scanning MiniGuide");
                     spectrumPlayer.evaluateJavascript(sortMiniGuideJS, null);
