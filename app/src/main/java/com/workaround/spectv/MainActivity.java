@@ -131,8 +131,8 @@ public class MainActivity extends FragmentActivity  {
                // if required
                var loopActiveDB = setInterval(function() {
                   try {
-                     var vready = $('video')[0].readyState;
-                     if (vready && vready == 4) {
+                     var vready = $('video')[0];
+                     if (vready && vready.readyState == 4) {
                         Spectv.MyDebug('loopActiveDB,  build guide db if needed');
                         Spectv.sortMiniGuide();
                         clearInterval(loopActiveDB);
@@ -919,6 +919,7 @@ private String[] parseIntentFilter(Intent intent) {
                              // hide the filter button
                              $('channels-filter').attr('style', 'display: none');
                              // callback to scan miniguide
+                             $('ul#channel-browser.channel-list.ng-scope').scrollTop(0);
                              Spectv.scanMiniGuide();
                              """;
 
@@ -990,8 +991,7 @@ private String[] parseIntentFilter(Intent intent) {
                             });
                             if (cnt == -1) {
                                // goto the top of the miniguide , start the scan
-                               // broken if miniguide already at zero
-                               Spectv.MyDebug('Start scanMiniGuideJS2 goto offseet 0');
+                               Spectv.MyDebug('Start scanMiniGuideJS2 goto offset 10');
                                Spectv.scrollMiniGuide('10');
                                cnt++;
                             };
