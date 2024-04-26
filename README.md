@@ -1,4 +1,4 @@
-# SpectrumTV_webview V2.0
+# SpectrumTV_webview V2.0.2
 Spectrum TV App for Android TV platform.
 Just a simple webview that launches the watch.spectrum.net website to be able to watch live tv.
 Manipulates javascript to hide unnecessary html elements, etc...
@@ -39,7 +39,13 @@ Channel Number Support / Keyboard Support
   added support for channel number intents,  -e channelNum [chnum] and
   spectv://watch.spectrum.net/livetv?channelNum=[chnum] <br>
 - ADB sendtext/keyevent - play or scroll to channel number<br>
-  adb shell input text "55" ; input keyevent 66";<br> 
+  adb shell input text "55" ; input keyevent 66";<br>
+V2.0.1
+- Bug fixes for scanning miniguide
+V2.0.2
+- Auto process channel number input after about 2.5 seconds, removes the requirement to hit enter/dpad center to process the channel
+- Closed Caption support <br>
+  On video view, arrow down button on dpad toggles "Closed Captions" off/on .
 
 ### Installation
 - On first startup, after the initial channel is loaded a scan of the miniguide will be started. <br>
@@ -51,11 +57,11 @@ Channel Number Support / Keyboard Support
 2. From the Application settings on the device, Force stop "Spectv", Delete the application data, restart "Spectv" 
 
 ### Assets
-<a href="https://github.com/brodfueh/SpectrumTV_webview/releases/download/Spectv-V2/spectv-v2.0.1-a.apk">
-Download Spectv v2.0.1-a apk</a>
+<a href="https://github.com/brodfueh/SpectrumTV_webview/releases/download/Spectv-V2/spectv-v2.0.2.beta.apk">
+Download Spectv v2.0.2-beta apk</a>
  
 
 
 ### Notes
-1. The application has only been tested on "Fire TV Stick 4K", "Chromecast with Google TV - 4K" and "Onn Google TV 4K"
+1. The application has only been tested on "Fire TV Stick 4K", "Chromecast with Google TV - 4K", "MECOOL KM2 PLUS Deluxe" and "Onn Google TV 4K"
 2. Changes to the Spectrum website may cause Spectv to fail and require updating to address the changes

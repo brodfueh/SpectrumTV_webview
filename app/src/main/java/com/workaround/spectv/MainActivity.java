@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -22,6 +23,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
+
+import java.time.Instant;
 
 /*
  * Main Activity class that loads {@link MainFragment}.
@@ -45,9 +48,10 @@ public class MainActivity extends FragmentActivity  {
     String cookies;
     boolean guideLoaded = false;
     public static boolean restartingFromDreaming = false;
+    static long onStopEpochSeconds = 0;
     boolean miniGuideIsShowing = false;
     GuideManager guideManager = null;
-    DreamReceiver myReceiver = new DreamReceiver();
+  //  DreamReceiver myReceiver = new DreamReceiver();
 
 
     String playerInitJS = """
@@ -205,14 +209,15 @@ public class MainActivity extends FragmentActivity  {
         MyDebug("start onCreate ");
         specPlayerReady = false;
         restartingFromDreaming = false;
+        onStopEpochSeconds = 0;
         specPlayerQueue = "";
 
-        IntentFilter filter = new IntentFilter();
-        filter.addAction(Intent.ACTION_DREAMING_STARTED);
-        filter.addAction(Intent.ACTION_SCREEN_OFF);
+      //  IntentFilter filter = new IntentFilter();
+      //  filter.addAction(Intent.ACTION_DREAMING_STARTED);
+      //  filter.addAction(Intent.ACTION_SCREEN_OFF);
 
      //   DreamReceiver myReceiver = new DreamReceiver();
-        registerReceiver(myReceiver, filter);
+     //   registerReceiver(myReceiver, filter);
 
         // load the miniguide cache
         guideManager = new GuideManager(this);
@@ -233,7 +238,8 @@ public class MainActivity extends FragmentActivity  {
         } else {
             curchnum = sharedPref.getString("currentChannel", DEFAULTCHANNEL);
         }
-
+        MyDebug("Starting Spectv channel " + curchnum +
+                "\n Found " +  guideManager.numberOfChannels() + " channels");
         Toast.makeText(getBaseContext(), "Starting Spectv channel " + curchnum +
                         "\n Found " +  guideManager.numberOfChannels() + " channels",
                 Toast.LENGTH_LONG).show();
@@ -263,7 +269,21 @@ public class MainActivity extends FragmentActivity  {
     @Override
     public void onStop() {
         super.onStop();
-        MyDebug("onStop()");
+        onStopEpochSeconds = System.currentTimeMillis() / 1000L;
+        MyDebug("onStop() epoch  seconds  = " + onStopEpochSeconds);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        /*
+        if (myReceiver != null) {
+           unregisterReceiver(myReceiver);
+        }
+        spectrumPlayer.destroy();
+        spectrumGuide.destroy();\
+        */
+        MyDebug("onDestroy()");
     }
 
     @Override
@@ -290,6 +310,7 @@ public class MainActivity extends FragmentActivity  {
         //   Fix issue with resume from background buffering for a long time. Seems to be
         // and issue with timeline being behind current time when device goes to sleep. Doing a load on the video
         // seems to fix the problem, buffers get flushed and timeline is updated to current time
+        setRestartFromDreaming();
         if (!info[0].isEmpty() && !curchnum.equals(info[0]) ) {
             MyDebug("onNewIntent playing new ch = " + info[0] );
             restartingFromDreaming = false;
@@ -307,6 +328,16 @@ public class MainActivity extends FragmentActivity  {
             navToChannel(info[1],info[0],false);
         } else {
             MyDebug("onNewIntent  ch = " + info[0] + "already playing" );
+        }
+    }
+
+    private  void setRestartFromDreaming() {
+        long currentsec = System.currentTimeMillis() / 1000L;
+        long reloadmax = 5 * 60;
+        MyDebug("setRestartFromDreaming  onStopEpochSeconds = " + onStopEpochSeconds );
+        MyDebug("setRestartFromDreaming  sleep time = " + (currentsec - onStopEpochSeconds) );
+        if ( (currentsec - onStopEpochSeconds) > reloadmax && onStopEpochSeconds != 0 ) {
+            restartingFromDreaming = true;
         }
     }
 
@@ -370,6 +401,13 @@ private String[] parseIntentFilter(Intent intent) {
                 return true;
             }
 
+            if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_DOWN && spectrumGuide.getVisibility() == View.GONE && !miniGuideIsShowing) {
+                // toggle closed caption
+                spectrumPlayer.evaluateJavascript("$('.closed-caption').click();", null);
+                return true;
+            }
+
+
             if (event.getKeyCode() == KeyEvent.KEYCODE_BACK && spectrumGuide.getVisibility() != View.GONE) {
                 if (spectrumGuide.canGoBack()) {
                     MyDebug("keycode back, guide is visable - can go back");
@@ -407,38 +445,21 @@ private String[] parseIntentFilter(Intent intent) {
 
             //  add  keyboard interface
             if (event.getKeyCode() >= KeyEvent.KEYCODE_0 && event.getKeyCode() <= KeyEvent.KEYCODE_9) {
-                MyDebug("KEYCODE EVENT " + (char) event.getUnicodeChar());
-                String chNumText = chNumTextView.getText() + Character.toString((char) event.getUnicodeChar());
+                MyDebug("KEYCODE EVENT " + Character.toString((char) event.getUnicodeChar()));
+                CharSequence temp = chNumTextView.getText();
+                String chNumText = temp + Character.toString((char) event.getUnicodeChar());
                 chNumTextView.setText(chNumText);
+                if (temp.equals("")) {
+                    countDownChNum();
+                }
                 return true;
             }
             if ( event.getKeyCode() == KeyEvent.KEYCODE_ENTER ||
                     event.getKeyCode() == KeyEvent.KEYCODE_DPAD_CENTER )  {
                 String chNumText = (String) chNumTextView.getText();
                 if (  !chNumText.equals("") ) {
-                    if (spectrumGuide.getVisibility() == View.VISIBLE) {
-                        scrollToGuideChannel(chNumText);
-                    } else if (spectrumPlayer.getVisibility() == View.VISIBLE) {
-                        MyDebug("chnumber = " + chNumText + " ENTER KEY");
-                        String mappedTsmid = guideManager.getTsmid(chNumText);
-                        if (!mappedTsmid.trim().isEmpty()) {
-                            if (miniGuideIsShowing) {
-                                scrollToMiniGuideChannel(chNumText, mappedTsmid);
-                            } else {
-                                if (specPlayerReady && !restartingFromDreaming) {
-                                    miniGuidePlayChannel(chNumText, mappedTsmid);
-                                } else {
-                                    MyDebug("adding chnumber = " + chNumText + " to specPlayerQueue");
-                                    specPlayerQueue = chNumText;
-                                }
-                            }
-                        } else {
-                            Toast.makeText(getBaseContext(), "Channel " + chNumText + " not found",
-                                    Toast.LENGTH_SHORT).show();
-                        }
-                    }
-                    chNumText = "";
-                    chNumTextView.setText(chNumText);
+                    chNumTextView.setText("");
+                    handleChNumEvent(chNumText);
                     return true;
                 } else if (miniGuideIsShowing) {
                         // user hits enter on channel to play
@@ -483,6 +504,49 @@ private String[] parseIntentFilter(Intent intent) {
         return super.dispatchKeyEvent(event);
     }
 
+    private void handleChNumEvent(String chnum) {
+        if (spectrumGuide.getVisibility() == View.VISIBLE) {
+            scrollToGuideChannel(chnum);
+        } else if (spectrumPlayer.getVisibility() == View.VISIBLE) {
+            MyDebug("chnumber = " + chnum + " ENTER KEY");
+            if (miniGuideIsShowing) {
+                scrollToMiniGuideChannel(chnum, "");
+            } else {
+                String mappedTsmid = guideManager.getTsmid(chnum);
+                if (!mappedTsmid.trim().isEmpty()) {
+                    if (specPlayerReady && !restartingFromDreaming) {
+                        miniGuidePlayChannel(chnum, mappedTsmid);
+                    } else {
+                        MyDebug("adding chnumber = " + chnum + " to specPlayerQueue");
+                        specPlayerQueue = chnum;
+                    }
+                } else {
+                    Toast.makeText(getBaseContext(), "Channel " + chnum + " not found",
+                            Toast.LENGTH_SHORT).show();
+                }
+            }
+        }
+    }
+
+    private void countDownChNum() {
+        new CountDownTimer(2400, 200) {
+            public void onTick(long ms) {
+                // if textview is empty, cancel countdown
+                if (chNumTextView.getText().equals("")) {
+                    cancel();
+                }
+            }
+
+            public void onFinish() {
+                // if textvalue not empty, process channel number
+                String chnum = (String)chNumTextView.getText();
+                if ( !chnum.equals("") ) {
+                    chNumTextView.setText("");
+                    handleChNumEvent(chnum);
+                }
+            }
+        }.start();
+    }
 
     private void dispatchMiniGuideEvent() {
         String playEventJS = """
@@ -501,6 +565,12 @@ private String[] parseIntentFilter(Intent intent) {
     private void scrollToMiniGuideChannel(String chnum, String tsmid) {
         MyDebug("Starting  scrollToMiniGuideChannel " + chnum);
         EpgMapData mapdata = guideManager.getGuideEntry(chnum);
+        if ( mapdata == null ) {
+            //  add function to find a nearby channel
+            chnum = guideManager.getAvailableChnum(chnum);
+            mapdata = guideManager.getGuideEntry(chnum);
+            MyDebug("Starting  scrollToMiniGuideChannel nearby channel  " + chnum);
+        }
         String offset = mapdata.offset;
         String cssid = mapdata.cssid;
         MyDebug("Starting  scrollToMiniGuideChannel chnum =" + chnum + " offset = " + offset);
@@ -523,9 +593,9 @@ private String[] parseIntentFilter(Intent intent) {
         MyDebug("Starting  scrollToGuideChannel "  + chnum);
         EpgMapData mapdata = guideManager.getGuideEntry(chnum);
         if ( mapdata == null ) {
-            // could add function to find a nearby channel
+            //  add function to find a nearby channel
             chnum = guideManager.getAvailableChnum(chnum);
-            MyDebug("Starting  scrollToGuideChannel channel not found " + chnum);
+            MyDebug("Starting  scrollToGuideChannel nearby channel  " + chnum);
         }
         String scrollToGuideChannelJS2 =
             "var chnum = '" + chnum + "' ;" +
@@ -553,7 +623,7 @@ private String[] parseIntentFilter(Intent intent) {
                                     element = $('.channel-heading p.channel-number').filter(function(index) {
                                        return $(this).text() === chnum;
                                     });
-                                        
+                                                                
                                     let offset = element[0].offsetTop;
                                         
                                     $('.main-content-wrapper').animate({
@@ -919,7 +989,7 @@ private String[] parseIntentFilter(Intent intent) {
                              // hide the filter button
                              $('channels-filter').attr('style', 'display: none');
                              // callback to scan miniguide
-                             $('ul#channel-browser.channel-list.ng-scope').scrollTop(0);
+                             $('ul#channel-browser.channel-list.ng-scope').scrollTop('0');
                              Spectv.scanMiniGuide();
                              """;
 
@@ -949,53 +1019,62 @@ private String[] parseIntentFilter(Intent intent) {
                     // start scan miniguide
                     String scanMiniGuideJS2 =
                             """
-                            var cnt = -1;
-                            var rowpx = 0;
-                            var licnt = 0;
-                            var SCANDONE = false;
-                            var lastoffset = 0;
-                            var prevLastOffset = -1;
-                            $('ul#channel-browser.channel-list.ng-scope').on('scrollend', function() {
-                               // start processing the channels
-                               if (!SCANDONE && cnt >= 0) {
-                                  rowpx = $('#channel-browser li').eq(1).height();
-                                  licnt = $('#channel-browser li').length;
-                                  var centeroffset = (rowpx * (licnt / 2)) - rowpx;
-                                  $('#channel-browser li').each(function(index, e) {
-                                     let css = $(e).attr('id');
-                                     if (css !== undefined) {
-                                        let chname = $(e).find('div.callsign.ng-binding').text();
-                                        let chnum = $(e).find('div.channel-number.ng-binding.ng-scope').text();
-                                        let offsettop = e.offsetTop - centeroffset;
-                                        lastoffset = e.offsetTop;
-                                        if (offsettop < 0) {
-                                           offsettop = e.offsetTop;
-                                        };
-                                        Spectv.addMiniGuideEntry(chnum, chname, css, offsettop.toString());
-                                        if (lastoffset === prevLastOffset) {
-                                           SCANDONE = true;
-                                        }
-                                     };
-                                  });
-                                  prevLastOffset = lastoffset;
-                                  // move past header , footers and last entry
-                                  var nextpos = lastoffset + rowpx + rowpx + rowpx;
-                                  Spectv.scrollMiniGuide(nextpos.toString());
-                               }
-                               if (SCANDONE) {
-                                  Spectv.setMiniGuideLoaded();
-                                  Spectv.toggleMiniGuideWindow("CLOSE");
-                                  $('ul#channel-browser.channel-list.ng-scope').off('scrollend');
-                                 
-                               }
-                            });
-                            if (cnt == -1) {
-                               // goto the top of the miniguide , start the scan
-                               Spectv.MyDebug('Start scanMiniGuideJS2 goto offset 10');
-                               Spectv.scrollMiniGuide('10');
-                               cnt++;
-                            };
-                            """;
+                                    var cnt = -1;
+                                    var rowpx = 0;
+                                    var licnt = 0;
+                                    var SCANDONE = false;
+                                    var rowcnt = 0;
+                                    var lastoffset = 0;
+                                    $('ul#channel-browser.channel-list.ng-scope').on('scrollend', function() {
+                                       // start processing the channels
+                                       if (!SCANDONE && cnt >= 0) {
+                                          rowpx = $('#channel-browser li').eq(1).height();
+                                          licnt = $('#channel-browser li').length;
+                                          var centeroffset = (rowpx * (licnt / 2)) - rowpx;
+                                          rowcnt = 0;
+                                          $('#channel-browser li').each(function(index, e) {
+                                             let css = $(e).attr('id');
+                                             if (css !== undefined) {
+                                                rowcnt++;
+                                                let chname = $(e).find('div.callsign.ng-binding').text();
+                                                let chnum = $(e).find('div.channel-number.ng-binding.ng-scope').text();
+                                                let offsettop = e.offsetTop - centeroffset;
+                                                lastoffset = e.offsetTop;
+                                                if (offsettop < 0) {
+                                                   offsettop = e.offsetTop;
+                                                };
+                                                Spectv.addMiniGuideEntry(chnum, chname, css, offsettop.toString());
+                                    
+                                             } else {
+                                               // must be header of footer, check if at end of miniguide
+                                               let words = $(e).attr('style');
+                                               // width: 100%; min-height: 0px; - end of scroll
+                                                let n = words.split(" ");
+                                                let h  = n[n.length - 1];
+                                                if ( h === "0px;"  && rowcnt > 0 ) {
+                                                     SCANDONE = true;
+                                                 };
+                                             };
+                                          });
+                                   
+                                          // move past header , footers and last entry
+                                          var nextpos = lastoffset + rowpx + rowpx + rowpx;
+                                          Spectv.scrollMiniGuide(nextpos.toString());
+                                       }
+                                       if (SCANDONE) {
+                                          Spectv.setMiniGuideLoaded();
+                                          Spectv.toggleMiniGuideWindow("CLOSE");
+                                          $('ul#channel-browser.channel-list.ng-scope').off('scrollend');
+                                         
+                                       }
+                                    });
+                                    if (cnt == -1) {
+                                       // goto the top of the miniguide , start the scan
+                                       Spectv.MyDebug('Start scanMiniGuideJS2 goto offset 10');
+                                       Spectv.scrollMiniGuide('10');
+                                       cnt++;
+                                    };
+                                    """;
                     // open the miniguide
                     MyDebug("  ScanMiniGuide - about to Show miniguide ");
                     toggleMiniGuideWindow("OPEN");

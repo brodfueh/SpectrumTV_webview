@@ -14,6 +14,7 @@ import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class GuideManager {
 
@@ -81,7 +82,9 @@ public class GuideManager {
     }
 
     public int numberOfChannels() {
-        return guideHashMap.size();
+        if (guideHashMap.size() > 0)
+          return guideHashMap.size() - 1;
+        else  return 0;
     }
 
     public EpgMapData getGuideEntry(String chnum) {
@@ -238,6 +241,16 @@ public class GuideManager {
                 i++;
             }
         }
+        // Dump Keys
+
+        // print keys using getKey() method
+        i = 0;
+        for (Map.Entry<String, EpgMapData> ite :
+                guideHashMap.entrySet()) {
+            MyDebug("row " + i + " key =" + ite.getKey() + ", ");
+            i++;
+        }
+
     }
 
 
