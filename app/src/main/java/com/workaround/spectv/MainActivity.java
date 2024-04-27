@@ -51,7 +51,6 @@ public class MainActivity extends FragmentActivity  {
     static long onStopEpochSeconds = 0;
     boolean miniGuideIsShowing = false;
     GuideManager guideManager = null;
-  //  DreamReceiver myReceiver = new DreamReceiver();
 
 
     String playerInitJS = """
@@ -212,13 +211,6 @@ public class MainActivity extends FragmentActivity  {
         onStopEpochSeconds = 0;
         specPlayerQueue = "";
 
-      //  IntentFilter filter = new IntentFilter();
-      //  filter.addAction(Intent.ACTION_DREAMING_STARTED);
-      //  filter.addAction(Intent.ACTION_SCREEN_OFF);
-
-     //   DreamReceiver myReceiver = new DreamReceiver();
-     //   registerReceiver(myReceiver, filter);
-
         // load the miniguide cache
         guideManager = new GuideManager(this);
         guideManager.readMiniGuideCache();
@@ -276,13 +268,6 @@ public class MainActivity extends FragmentActivity  {
     @Override
     public void onDestroy() {
         super.onDestroy();
-        /*
-        if (myReceiver != null) {
-           unregisterReceiver(myReceiver);
-        }
-        spectrumPlayer.destroy();
-        spectrumGuide.destroy();\
-        */
         MyDebug("onDestroy()");
     }
 
