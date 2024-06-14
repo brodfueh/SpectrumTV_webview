@@ -47,6 +47,7 @@ public class MainActivity extends FragmentActivity  {
     String lastChannelURL;
     String cookies;
     boolean guideLoaded = false;
+    boolean loginRequired = false;
     public static boolean restartingFromDreaming = false;
     static long onStopEpochSeconds = 0;
     boolean miniGuideIsShowing = false;
@@ -59,6 +60,8 @@ public class MainActivity extends FragmentActivity  {
                   Spectv.MyDebug('page loading ' +
                      window.location.pathname + ' starting playerInitJS');
                   try {
+                   	 // Handle away from home prompt
+                   	 document.querySelector("#kite-modal-container > div > div.kite-modal-dialog.kite-card > div.kite-modal-body > kite-alert > div > button")?.click();					
                      // Accept initial prompts
                      if (document.querySelector('.continue-button')?.childNodes?.length > 0) {
                         document.querySelector('.continue-button')?.childNodes[0].click();
@@ -143,27 +146,7 @@ public class MainActivity extends FragmentActivity  {
                   } catch (e) { console.log('ERROR in sortMiniGuide monitoring', e); }
                }, 500);
                
-               // To be able to save last viewed channel from mmini guide.
-               // hacky way since cant listen to click event on channel-list items
-               /*  This function is no longer needed, dispatchKeyEvent() handles miniguide
-                    user interactions
-               var loopActiveEl = setInterval(() => {
-                  try {
-                     if (document?.activeElement?.id?.includes('channel-list-item-')) {
-                        if ($('video')[0].paused) {
-                           var strArr = document?.activeElement?.id.split('-');
-                           var channelId = strArr[strArr.length - 1];
-                           var channelNum = strArr[strArr.length - 2]
-                           Spectv.MyDebug('loopActiveEl tsmid =' +
-                              channelId + ' chnum  = ' +  channelNum);
-                           Spectv.saveLastChannel(channelId, channelNum);
-                           Spectv.toggleMiniGuideWindow('CLOSE');
-                        }
-                     }
-                  } catch (e) { console.log('ERROR in miniguide monitoring', e); }
-               }, 1000);
-               */
-            """;
+             """;
 
     String guideInitJS = """
             Spectv.MyDebug('starting guideInitJS');
@@ -326,32 +309,32 @@ public class MainActivity extends FragmentActivity  {
         }
     }
 
-private String[] parseIntentFilter(Intent intent) {
-    String[] info = new String[2];
-    String channelId = "";
-    String channelNum = "";
-    Uri intentData = intent.getData();
-    if (intentData != null) {
-        Uri uri=Uri.parse(intentData.toString());
-        channelId = uri.getQueryParameter("channelId");
-        channelNum = uri.getQueryParameter("channelNum");
-    } else {
-        channelId = intent.getStringExtra("channelId");
-        channelNum = intent.getStringExtra("channelNum");
+    private String[] parseIntentFilter(Intent intent) {
+        String[] info = new String[2];
+        String channelId = "";
+        String channelNum = "";
+        Uri intentData = intent.getData();
+        if (intentData != null) {
+            Uri uri=Uri.parse(intentData.toString());
+            channelId = uri.getQueryParameter("channelId");
+            channelNum = uri.getQueryParameter("channelNum");
+        } else {
+            channelId = intent.getStringExtra("channelId");
+            channelNum = intent.getStringExtra("channelNum");
+        }
+        // setup return values
+        if (channelNum != null && !channelNum.isEmpty())  {
+            channelId = guideManager.getTsmid(channelNum);
+        } else if (channelId != null && !channelId.isEmpty()) {
+            channelNum = guideManager.getChnum(channelId);
+        }  else {
+            channelId = "";
+            channelNum = "";
+        }
+        info[0] = channelNum;
+        info[1] = channelId;
+        return info;
     }
-    // setup return values
-    if (channelNum != null && !channelNum.isEmpty())  {
-        channelId = guideManager.getTsmid(channelNum);
-    } else if (channelId != null && !channelId.isEmpty()) {
-        channelNum = guideManager.getChnum(channelId);
-    }  else {
-        channelId = "";
-        channelNum = "";
-    }
-    info[0] = channelNum;
-    info[1] = channelId;
-    return info;
-}
 
     @SuppressLint("RestrictedApi")
     @Override
@@ -359,6 +342,9 @@ private String[] parseIntentFilter(Intent intent) {
 
         // Handle key events to consistently bring up the mini channel guide
         if (event.getAction() == KeyEvent.ACTION_DOWN) {
+            if ( loginRequired ) {
+                return super.dispatchKeyEvent(event);
+            }
             if (event.getKeyCode() == KeyEvent.KEYCODE_DPAD_UP && spectrumGuide.getVisibility() == View.GONE && !miniGuideIsShowing) {
                 // Simulate clicking on the video player which brings up the mini channel guide (just like on desktop)
                 //spectrumPlayer.evaluateJavascript("$('#spectrum-player').focus().click();", null);
@@ -373,12 +359,14 @@ private String[] parseIntentFilter(Intent intent) {
 //                        spectrumPlayer.evaluateJavascript("toggleGuide('SHOW');", null);
 //                    }
 //                });
+
                 if (!guideManager.guideCacheIsReady()) {
                     MyDebug("Error  dispatchKeyEvent - Guide NOT AVAILABLE");
                     Toast.makeText(getBaseContext(), "Guide NOT AVAILABLE",
                             Toast.LENGTH_LONG).show();
-                    return true;
+                    return false;
                 }
+
                 spectrumPlayer.evaluateJavascript("toggleGuide('SHOWGUIDE');", null);
 //              scroll Guide to current channel playing
                 String curchannel = sharedPref.getString("currentChannel",DEFAULTCHANNEL);
@@ -415,8 +403,9 @@ private String[] parseIntentFilter(Intent intent) {
                     MyDebug("Error  dispatchKeyEvent - MiniGuide NOT AVAILABLE");
                     Toast.makeText(getBaseContext(), "MiniGuide NOT AVAILABLE",
                             Toast.LENGTH_LONG).show();
-                    return true;
+                    return false;
                 }
+
                 if (miniGuideIsShowing) {
                     toggleMiniGuideWindow("CLOSE");
                 } else {
@@ -447,9 +436,9 @@ private String[] parseIntentFilter(Intent intent) {
                     handleChNumEvent(chNumText);
                     return true;
                 } else if (miniGuideIsShowing) {
-                        // user hits enter on channel to play
-                       dispatchMiniGuideEvent();
-                        return true;
+                    // user hits enter on channel to play
+                    dispatchMiniGuideEvent();
+                    return true;
                 }
             }
             if ((event.getKeyCode() == KeyEvent.KEYCODE_CHANNEL_UP ||
@@ -562,13 +551,13 @@ private String[] parseIntentFilter(Intent intent) {
 
         String scrollToMiniGuideChannelJS =
                 // set focus after DOM settles
-              "function setfocus() {" +
-                      "$( '" + cssid + "').focus(); " +
-              "};" +
-              "$('ul#channel-browser.channel-list.ng-scope').animate({ scrollTop: " +
+                "function setfocus() {" +
+                        "$( '" + cssid + "').focus(); " +
+                        "};" +
+                        "$('ul#channel-browser.channel-list.ng-scope').animate({ scrollTop: " +
                         offset + "} , 'slow', function () { " +
-                      "    setTimeout(setfocus, 20);" +
-                      " });";
+                        "    setTimeout(setfocus, 20);" +
+                        " });";
 
         spectrumPlayer.evaluateJavascript(scrollToMiniGuideChannelJS, null);
     }
@@ -583,46 +572,50 @@ private String[] parseIntentFilter(Intent intent) {
             MyDebug("Starting  scrollToGuideChannel nearby channel  " + chnum);
         }
         String scrollToGuideChannelJS2 =
-            "var chnum = '" + chnum + "' ;" +
-            """
-                        var element;
-                                        
-                        function setfocus() {
-                        // get timeline offset to position right px
-                           var nowMil = new Date().getTime();
-                           var roundedMil = Math.floor(nowMil/1000/60/30) * 30 * 60 * 1000;
-                           var timeline = $('[time="' + roundedMil + '"]')[0].getBoundingClientRect();
-                        // get the row offset px from top viewport
-                           var domrect = element[0].getBoundingClientRect();
-                           document.elementFromPoint(timeline.left, domrect.top).focus();
-                        };
-                        var loopvar = setInterval(
-                           function() {
-                              if ($('.channel-heading p.channel-number').length > 0 &&
-                                $('.channel-content').length > 0 ) {
-                                 try {
-                                    // move guide to current time
-                                    $('.filter-section').attr('style', 'display: inline');
-                                    $('.col-md-2.now').click();
-                                    $('.filter-section').attr('style', 'display: none');
-                                    element = $('.channel-heading p.channel-number').filter(function(index) {
-                                       return $(this).text() === chnum;
-                                    });
-                                                                
-                                    let offset = element[0].offsetTop;
-                                        
-                                    $('.main-content-wrapper').animate({
-                                       scrollTop: offset
-                                    }, 'slow', function() {
-                                       setTimeout(setfocus, 250);
-                                    });
-                                 } catch (error) {
-                                    Spectv.MyDebug('scrollToGuideChannelJS exception = ' +  error.toString() );
-                                 };
-                                 clearInterval(loopvar);
-                              };
-                           }, 100);
-                    """;
+                "var chnum = '" + chnum + "' ;" +
+                        """
+                                    var element;
+                                    
+                                    // Accept initial prompts, out of home network
+                                 
+                                 document.querySelector("#kite-modal-container > div > div.kite-modal-dialog.kite-card > div.kite-modal-body > kite-alert > div > button")?.click();
+                                                                     
+                                    function setfocus() {
+                                    // get timeline offset to position right px
+                                       var nowMil = new Date().getTime();
+                                       var roundedMil = Math.floor(nowMil/1000/60/30) * 30 * 60 * 1000;
+                                       var timeline = $('[time="' + roundedMil + '"]')[0].getBoundingClientRect();
+                                    // get the row offset px from top viewport
+                                       var domrect = element[0].getBoundingClientRect();
+                                       document.elementFromPoint(timeline.left, domrect.top).focus();
+                                    };
+                                    var loopvar = setInterval(
+                                       function() {
+                                          if ($('.channel-heading p.channel-number').length > 0 &&
+                                            $('.channel-content').length > 0 ) {
+                                             try {
+                                                // move guide to current time
+                                                $('.filter-section').attr('style', 'display: inline');
+                                                $('.col-md-2.now').click();
+                                                $('.filter-section').attr('style', 'display: none');
+                                                element = $('.channel-heading p.channel-number').filter(function(index) {
+                                                   return $(this).text() === chnum;
+                                                });
+                                                                            
+                                                let offset = element[0].offsetTop;
+                                                 Spectv.MyDebug('scrollToGuideChannelJS offsetTop = ' +  offset );    
+                                                $('.main-content-wrapper').animate({
+                                                   scrollTop: offset
+                                                }, 'slow', function() {
+                                                   setTimeout(setfocus, 250);
+                                                });
+                                             } catch (error) {
+                                                Spectv.MyDebug('scrollToGuideChannelJS exception = ' +  error.toString() );
+                                             };
+                                             clearInterval(loopvar);
+                                          };
+                                       }, 100);
+                                """;
 
         MyDebug("scrollToGuideChannel chnum = " + chnum );
         spectrumGuide.evaluateJavascript(scrollToGuideChannelJS2, null);
@@ -642,7 +635,7 @@ private String[] parseIntentFilter(Intent intent) {
                         return;
                     }
                     if (state.equals("OPEN")) {
-                       String openJS = " $('mini-guide').last().addClass('mini-guide-open');";
+                        String openJS = " $('mini-guide').last().addClass('mini-guide-open');";
                         spectrumPlayer.evaluateJavascript(openJS, null);
                         miniGuideIsShowing = true;
                         return;
@@ -651,9 +644,9 @@ private String[] parseIntentFilter(Intent intent) {
                 }
             });
 
-            } catch (Exception e) {
-                Log.d("ERROR in toggleMiniGuideWindow", e.toString());
-            }
+        } catch (Exception e) {
+            Log.d("ERROR in toggleMiniGuideWindow", e.toString());
+        }
     }
 
     @JavascriptInterface
@@ -661,6 +654,10 @@ private String[] parseIntentFilter(Intent intent) {
         return !specPlayerQueue.equals("");
     }
 
+    @JavascriptInterface
+    public void setLoginRequired() {
+        loginRequired = true;
+    }
     @JavascriptInterface
     public void setSpecPlayerReady() {
         specPlayerReady = true;
@@ -846,7 +843,7 @@ private String[] parseIntentFilter(Intent intent) {
     private void initPlayer() {
         spectrumPlayer = findViewById(R.id.spectv);
 
-    //    spectrumPlayer.clearCache(true);
+        //    spectrumPlayer.clearCache(true);
         spectrumPlayer.setWebChromeClient(new WebChromeClient() {
 //            @Override
 //            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
@@ -878,7 +875,13 @@ private String[] parseIntentFilter(Intent intent) {
             public void onPageFinished(WebView view, String url) {
                 cookies = CookieManager.getInstance().getCookie(url);
                 super.onPageFinished(view, url);
-                spectrumPlayer.evaluateJavascript(playerInitJS, null);
+                MyDebug("loaded url = " + url );
+                if ( url.contains("/login") && !url.contains("/login/auto")) {
+                    loginRequired = true;
+                } else {
+                    loginRequired = false;
+                    spectrumPlayer.evaluateJavascript(playerInitJS, null);
+                }
 
             }
 
@@ -1002,17 +1005,16 @@ private String[] parseIntentFilter(Intent intent) {
                 public void run() {
                     MyDebug("Starting  scanMiniGuide");
                     // start scan miniguide
-                    String scanMiniGuideJS2 =
+                    String scanMiniGuideJS3 =
                             """
-                                    var cnt = -1;
                                     var rowpx = 0;
                                     var licnt = 0;
                                     var SCANDONE = false;
                                     var rowcnt = 0;
                                     var lastoffset = 0;
-                                    $('ul#channel-browser.channel-list.ng-scope').on('scrollend', function() {
+                                    function readChannels() {
                                        // start processing the channels
-                                       if (!SCANDONE && cnt >= 0) {
+                                       if (!SCANDONE ) {
                                           rowpx = $('#channel-browser li').eq(1).height();
                                           licnt = $('#channel-browser li').length;
                                           var centeroffset = (rowpx * (licnt / 2)) - rowpx;
@@ -1044,28 +1046,33 @@ private String[] parseIntentFilter(Intent intent) {
                                    
                                           // move past header , footers and last entry
                                           var nextpos = lastoffset + rowpx + rowpx + rowpx;
-                                          Spectv.scrollMiniGuide(nextpos.toString());
-                                       }
+                                          $('ul#channel-browser.channel-list.ng-scope').scrollTop(nextpos.toString());
+                                       };
                                        if (SCANDONE) {
                                           Spectv.setMiniGuideLoaded();
                                           Spectv.toggleMiniGuideWindow("CLOSE");
-                                          $('ul#channel-browser.channel-list.ng-scope').off('scrollend');
+                                       //   $('ul#channel-browser.channel-list.ng-scope').off('scrollend');
                                          
                                        }
-                                    });
-                                    if (cnt == -1) {
-                                       // goto the top of the miniguide , start the scan
-                                       Spectv.MyDebug('Start scanMiniGuideJS2 goto offset 10');
-                                       Spectv.scrollMiniGuide('10');
-                                       cnt++;
                                     };
+                                    
+                                    var scanLoop = setInterval(
+                                     function() {
+                                         if ( SCANDONE ) {
+                                            clearInterval(scanLoop);
+                                         } else {
+                                           readChannels();
+                                         }
+                                     } , 200);
+                                    
+                                 
                                     """;
                     // open the miniguide
                     MyDebug("  ScanMiniGuide - about to Show miniguide ");
                     toggleMiniGuideWindow("OPEN");
                     // run javascript to scan miniguide
                     MyDebug("  ScanMiniGuide - about to Scan  miniguide ");
-                    spectrumPlayer.evaluateJavascript(scanMiniGuideJS2, null);
+                    spectrumPlayer.evaluateJavascript(scanMiniGuideJS3, null);
                     MyDebug("End  ScanMiniGuide");
                 }
             });
@@ -1077,7 +1084,9 @@ private String[] parseIntentFilter(Intent intent) {
     @JavascriptInterface
     // wrapper function to handle JS call to guideManager
     public void addMiniGuideEntry(String chnum, String chname, String css, String offsetpx) {
-        guideManager.addMiniGuideEntry(chnum, chname, css, offsetpx);
+        if ( !chnum.equals("")) {
+            guideManager.addMiniGuideEntry(chnum, chname, css, offsetpx);
+        }
     }
 
     @JavascriptInterface
@@ -1096,22 +1105,6 @@ private String[] parseIntentFilter(Intent intent) {
             });
         } catch (Exception e) {
             MyDebug("setMiniGuideLoaded Exception " + e.toString());
-        }
-    }
-    @JavascriptInterface
-    // used is scan miniguide
-    public void scrollMiniGuide(String px) {
-        try {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    String jumpToPX ="$('ul#channel-browser.channel-list.ng-scope').scrollTop(" + px +" );";
-                    spectrumPlayer.evaluateJavascript(jumpToPX, null);
-                }
-            });
-
-        } catch (Exception e) {
-            MyDebug("scrollMiniGuide Exception " + e.toString());
         }
     }
     ///////////////////////////////////////////////////////////

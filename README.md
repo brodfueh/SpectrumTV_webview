@@ -1,4 +1,4 @@
-# SpectrumTV_webview V2.0.2
+# SpectrumTV_webview V2.0.3
 Spectrum TV App for Android TV platform.
 Just a simple webview that launches the watch.spectrum.net website to be able to watch live tv.
 Manipulates javascript to hide unnecessary html elements, etc...
@@ -11,7 +11,7 @@ Bring up TV Guide with D-Pad Up
 
 V1.2.1   "gigem/SpectrumTV_webview"<br>
 - Added Support for Intent Filters<br>
-  intent can be passed two ways, -e channelId [tsmid]<br> 
+  intent can be passed two ways, -e channelId [tsmid]<br>
   or https://watch.spectrum.net/livetv?channelId=[tsmid]<br>
 - Added "Continue" , 4 hour timeout
 - Minimum SDK level set to 25 to support FireStick
@@ -40,12 +40,15 @@ Channel Number Support / Keyboard Support
   spectv://watch.spectrum.net/livetv?channelNum=[chnum] <br>
 - ADB sendtext/keyevent - play or scroll to channel number<br>
   adb shell input text "55" ; input keyevent 66";<br>
-V2.0.1
+  V2.0.1
 - Bug fixes for scanning miniguide
-V2.0.2
+  V2.0.2
 - Auto process channel number input after about 2.5 seconds, removes the requirement to hit enter/dpad center to process the channel
 - Closed Caption support <br>
   On video view, arrow down button on dpad toggles "Closed Captions" off/on .
+  V2.0.3
+- Add support for "Away From Home Network", requires Spectrum Login and rescan of miniguide.
+- Redesigned miniguide scan function to eliminate async scrolling and onScroll listener.
 
 ### Installation
 - On first startup, after the initial channel is loaded a scan of the miniguide will be started. <br>
@@ -54,12 +57,13 @@ V2.0.2
 - Rescan MiniGuide<br>
   If the Spectrum lineup changes you will need to rescan the miniguide. This can be done in two ways.<br>
 1. Uninstall and reinstall the "Spectv" package
-2. From the Application settings on the device, Force stop "Spectv", Delete the application data, restart "Spectv" 
+2. From the Application settings on the device, Force stop "Spectv", Delete the application data, restart "Spectv"
 
 ### Assets
-<a href="https://github.com/brodfueh/SpectrumTV_webview/releases/download/Spectv-v2.0.2-beta/spectv-v2.0.2-beta.apk">
-Download Spectv v2.0.2-beta apk</a>
- 
+<a href="https://github.com/brodfueh/SpectrumTV_webview/releases/download/Spectv-v2.0.3/spectv-v2.0.3.apk">
+Download Spectv v2.0.3  apk</a>
+
+
 
 
 ### Notes

@@ -21,7 +21,7 @@ public class GuideManager {
     protected Context context;
     SharedPreferences sharedPref;
     SharedPreferences.Editor sharedPrefEdit;
-    final String DBVERSION = "V1.1";
+    final String DBVERSION = "V1.0";
     final String ROOTNODE = "-1";  // add a root entry "-1" that has head/nextChnum tail/prevChNum
     final Boolean DEBUGON = false;
     final String GuideCacheFile = "GuideCache.dat";
@@ -63,6 +63,9 @@ public class GuideManager {
     public void addMiniGuideEntry(String chnum, String chname, String css, String offsetpx) {
 
         String[] parts = css.split("-");
+        if ( miniGuideBuffer.containsKey(chnum)) {
+            return;
+        }
         int pos = parts.length - 1;
         String tsmid = parts[pos];
         String cssid = "#" + css;
@@ -83,7 +86,7 @@ public class GuideManager {
 
     public int numberOfChannels() {
         if (guideHashMap.size() > 0)
-          return guideHashMap.size() - 1;
+            return guideHashMap.size() - 1;
         else  return 0;
     }
 
@@ -232,7 +235,7 @@ public class GuideManager {
             EpgMapData d =  guideHashMap.get(key);
             s = String.format("%7s %7s %7s %7s %7s %7s %7s %9s",
                     String.valueOf(i),d.chnum,d.prevChNum,d.nextChNum,
-                         String.valueOf(d.chindex),d.name,d.tsmid,d.offset);
+                    String.valueOf(d.chindex),d.name,d.tsmid,d.offset);
             MyDebug(s);
             if (d.chnum.equals(d.nextChNum)) {
                 done = true;
