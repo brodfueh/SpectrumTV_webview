@@ -40,12 +40,15 @@ Channel Number Support / Keyboard Support
   spectv://watch.spectrum.net/livetv?channelNum=[chnum] <br>
 - ADB sendtext/keyevent - play or scroll to channel number<br>
   adb shell input text "55" ; input keyevent 66";<br>
+
 V2.0.1
 - Bug fixes for scanning miniguide
+
 V2.0.2
 - Auto process channel number input after about 2.5 seconds, removes the requirement to hit enter/dpad center to process the channel
 - Closed Caption support <br>
   On video view, arrow down button on dpad toggles "Closed Captions" off/on . <br>
+
 V2.0.3
 - Add support for "Away From Home Network", requires Spectrum Login and rescan of miniguide.
 - Redesigned miniguide scan function to eliminate async scrolling and onScroll listener.
