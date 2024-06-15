@@ -45,7 +45,7 @@ Channel Number Support / Keyboard Support
   V2.0.2
 - Auto process channel number input after about 2.5 seconds, removes the requirement to hit enter/dpad center to process the channel
 - Closed Caption support <br>
-  On video view, arrow down button on dpad toggles "Closed Captions" off/on .
+  On video view, arrow down button on dpad toggles "Closed Captions" off/on . <br>
   V2.0.3
 - Add support for "Away From Home Network", requires Spectrum Login and rescan of miniguide.
 - Redesigned miniguide scan function to eliminate async scrolling and onScroll listener.
