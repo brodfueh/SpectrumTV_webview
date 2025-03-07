@@ -66,7 +66,7 @@ V2.0.4
 2. From the Application settings on the device, Force stop "Spectv", Delete the application data, restart "Spectv"
 
 ### Assets
-<a href="https://github.com/brodfueh/SpectrumTV_webview/releases/download/Spectv-v2.0.4/spectv-v2.0.4.apk">
+<a href="https://github.com/brodfueh/SpectrumTV_webview/releases/download/Spectv-V2.0.4/spectv-2.0.4.apk">
 Download Spectv v2.0.4  apk</a>
 
 
