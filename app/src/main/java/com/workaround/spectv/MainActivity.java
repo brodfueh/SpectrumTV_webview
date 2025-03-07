@@ -464,8 +464,10 @@ public class MainActivity extends FragmentActivity  {
             }
 
             if ((event.getKeyCode() == KeyEvent.KEYCODE_LAST_CHANNEL ||
-                    event.getKeyCode() == KeyEvent.KEYCODE_DEL ) &&
-                    spectrumPlayer.getVisibility() == View.VISIBLE ) {
+                    event.getKeyCode() == KeyEvent.KEYCODE_DEL ||
+                    event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT  ) &&
+                    spectrumPlayer.getVisibility() == View.VISIBLE &&
+                    !miniGuideIsShowing) {
                 String newchannel = sharedPref.getString("prevChannel",DEFAULTCHANNEL);
                 EpgMapData epg = guideManager.getGuideEntry(newchannel);
                 miniGuidePlayChannel(epg.chnum, epg.tsmid);

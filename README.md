@@ -30,7 +30,7 @@ Channel Number Support / Keyboard Support
   Up Keys -  PLUS, PAGE-UP, CHANNEL_UP<br>
   Down Keys - MINUS, PAGE-DOWN, CHANNEL_DOWN<br>
 - Toggle Channel -  switches between last two channels viewed<br>
-  Toggel Keys - DEL, LAST_CHANNEL<br>
+  Toggel Keys - DEL, LAST_CHANNEL, LEFT-ARROW<br>
 - Sort MiniGuide by channel number
 - Performance Improvements <br>
   Avoid reloading Spectrum URL when changing channels<br>
@@ -53,6 +53,9 @@ V2.0.3
 - Add support for "Away From Home Network", requires Spectrum Login and rescan of miniguide.
 - Redesigned miniguide scan function to eliminate async scrolling and onScroll listener.
 
+V2.0.4
+- Add support for "Left Arrow (DPAD_LEFT)" to toggle previous/last channel
+
 ### Installation
 - On first startup, after the initial channel is loaded a scan of the miniguide will be started. <br>
   A message will be displayed "Scanning MiniGuide" which will close when the scan has completed, around 45 seconds.<br>
@@ -63,8 +66,8 @@ V2.0.3
 2. From the Application settings on the device, Force stop "Spectv", Delete the application data, restart "Spectv"
 
 ### Assets
-<a href="https://github.com/brodfueh/SpectrumTV_webview/releases/download/Spectv-v2.0.3/spectv-v2.0.3.apk">
-Download Spectv v2.0.3  apk</a>
+<a href="https://github.com/brodfueh/SpectrumTV_webview/releases/download/Spectv-v2.0.4/spectv-v2.0.4.apk">
+Download Spectv v2.0.4  apk</a>
 
 
 
