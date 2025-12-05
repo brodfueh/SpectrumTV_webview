@@ -12,6 +12,7 @@ import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
+import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.PermissionRequest;
@@ -24,7 +25,6 @@ import android.widget.Toast;
 
 import androidx.fragment.app.FragmentActivity;
 
-import java.time.Instant;
 
 /*
  * Main Activity class that loads {@link MainFragment}.
@@ -53,99 +53,126 @@ public class MainActivity extends FragmentActivity  {
     boolean miniGuideIsShowing = false;
     GuideManager guideManager = null;
 
+    static int TESTNUM = 1;
+
 
     String playerInitJS = """
-              var loopVar = setInterval(
-               function() {
-                  Spectv.MyDebug('page loading ' +
-                     window.location.pathname + ' starting playerInitJS');
-                  try {
-                   	 // Handle away from home prompt
-                   	 document.querySelector("#kite-modal-container > div > div.kite-modal-dialog.kite-card > div.kite-modal-body > kite-alert > div > button")?.click();					
-                     // Accept initial prompts
-                     if (document.querySelector('.continue-button')?.childNodes?.length > 0) {
-                        document.querySelector('.continue-button')?.childNodes[0].click();
-                     }
-                     document.querySelector('[aria-label*="Continue and accept"]')?.click();
-                     document.querySelector('.btn-success')?.click();
-                     // Hide html elements except video player
-                     $('.site-header').attr('style', 'display: none');
-                     $('#video-controls').attr('style', 'display: none');
-                     $('.nav-triangle-pattern').attr('style', 'display: none');
-                     $('channels-filter').attr('style', 'display: none');
-                     $('.transparent-header').attr('style', 'display: none');
-                     // Style mini channel guide
-                     $('#channel-browser').attr('style', 'height: 100%');
-                     $('.mini-guide').attr('style', 'height: 100%');
-                     // To help with navigation with remote. Doesn't seem to do anything though
-                     $('#channel-browser').attr('style', 'tabindex: 0');
-                     $('#spectrum-player').attr('style', 'tabindex: 0');
-                     $('.site-footer').attr('style', 'display: none');
-                     if (Spectv.channelIsQueued()) {
-                        Spectv.MyDebug('channel is queued, clear loopvar running playerInitJS');
-                        clearInterval(loopVar);
-                     };
-                     Spectv.MyDebug('about to check video length running playerInitJS');
-                     if ($('video')?.length > 0) {
-                        // Max volume
-                        $('video')[0].volume = 1.0;
-                        // Load Guide
-                        Spectv.MyDebug('start preloading guide running playerInitJS');
-                        Spectv.preloadGuide();
-                        Spectv.MyDebug('done preloading guide running playerInitJS ');
-                        clearInterval(loopVar);
-                        
-                        // gigem - Wat for for and click the Still there? Continue button.
-                         var observer = new MutationObserver(function(mutations) {
-                             for (mutation of mutations) {
-                                 for (addedNode of mutation.addedNodes) {
-                                     var button = document.evaluate(
-                                          "//button[contains(text(), 'Continue')]",
-                                          addedNode, null,
-                                          XPathResult.FIRST_ORDERED_NODE_TYPE,
-                                          null).singleNodeValue;
-                                     if (button) {
-                                         Spectv.MyDebug('clicking 4hr continue button');
-                                         console.log('clicking continue button');
-                                         button.click();
-                                         return;
-                                     }
-                                 }
-                             };
-                         });
-                         observer.observe(document.body, {
-                             subtree: true,
-                             childList: true
-                         });
-                        
+var loopVar = setInterval(
+        function () {
+        Spectv.MyDebug('page loading ' +
+            window.location.pathname + ' starting playerInitJS');
+        try {
+            // Handle away from home prompt
+            document.querySelector("#kite-modal-container > div > div.kite-modal-dialog.kite-card > div.kite-modal-body > kite-alert > div > button")?.click();
+            // Accept initial prompts
+            if (document.querySelector('.continue-button')?.childNodes?.length > 0) {
+                // Iterate through the child nodes
+                nodeList = document.querySelector('.continue-button').childNodes;
+                nodeList.forEach((node, index) => {
+                    console.log(`Node ${index}:`, node.nodeName);
+                    if (node.nodeName === 'KITE-BUTTON') {
+                        node.click();
+                    }
+                });
+            }
+
+            document.querySelector('[aria-label*="Continue and accept"]')?.click();
+            document.querySelector('.btn-success')?.click();
+            // Hide html elements except video player
+            $('.site-header').attr('style', 'display: none');
+            $('#video-controls').attr('style', 'display: none');
+            $('.nav-triangle-pattern').attr('style', 'display: none');
+            $('channels-filter').attr('style', 'display: none');
+            $('.transparent-header').attr('style', 'display: none');
+            // Style mini channel guide
+            $('#channel-browser').attr('style', 'height: 100%');
+            $('.mini-guide').attr('style', 'height: 100%');
+            // To help with navigation with remote. Doesn't seem to do anything though
+            $('#channel-browser').attr('style', 'tabindex: 0');
+            $('#spectrum-player').attr('style', 'tabindex: 0');
+            $('.site-footer').attr('style', 'display: none');
+            if (Spectv.channelIsQueued()) {
+                Spectv.MyDebug('channel is queued, clear loopvar running playerInitJS');
+                clearInterval(loopVar);
+            };
+            Spectv.MyDebug('about to check video length running playerInitJS');
+            if ($('video')?.length > 0) {
+                // Max volume
+                $('video')[0].volume = 1.0;
+
+                // force unmute
+                // check for mute
+                var specmute = $('#volume-control-icon').attr('aria-pressed');
+                 if ( specmute === 'true' ) {
+                    $('video')[0].muted = true;
+                    $('#volume-control-icon').click();
+                 } else {
+                    // spectv not muted, force video to unmuted
+                    $('video')[0].muted = false;
+                 }
+                // Load Guide
+                Spectv.MyDebug('start preloading guide running playerInitJS');
+                Spectv.preloadGuide();
+                Spectv.MyDebug('done preloading guide running playerInitJS ');
+                clearInterval(loopVar);
+
+                // gigem - Wat for for and click the Still there? Continue button.
+                var observer = new MutationObserver(function (mutations) {
+                    for (mutation of mutations) {
+                        for (addedNode of mutation.addedNodes) {
+                            var button = document.evaluate(
+                                    "//button[contains(text(), 'Continue')]",
+                                    addedNode, null,
+                                    XPathResult.FIRST_ORDERED_NODE_TYPE,
+                                    null).singleNodeValue;
+                            if (button) {
+                                Spectv.MyDebug('clicking 4hr continue button');
+                                console.log('clicking continue button');
+                                button.click();
+                                return;
+                            }
                         }
-                     } catch (e) {
-                        console.log('ERROR in livetv', e)
-                     }
-                  }, 1000);
-               if (Spectv.channelIsQueued()) {
-                  Spectv.MyDebug('channel is queued, reload URL, running playerInitJS');
-                  Spectv.reloadStartupChannel();
-               } else {
-                  Spectv.setSpecPlayerReady();
-               };
-              
-               function toggleGuide(s) { Spectv.channelGuide(s) };
-               function toggleMiniGuide(s) { Spectv.channelGuide(s) };
-              
-               // check if video is ready, when ready create the guide database
-               // if required
-               var loopActiveDB = setInterval(function() {
-                  try {
-                     var vready = $('video')[0];
-                     if (vready && vready.readyState == 4) {
-                        Spectv.MyDebug('loopActiveDB,  build guide db if needed');
-                        Spectv.sortMiniGuide();
-                        clearInterval(loopActiveDB);
-                     };
-                  } catch (e) { console.log('ERROR in sortMiniGuide monitoring', e); }
-               }, 500);
-               
+                    };
+                });
+                observer.observe(document.body, {
+                    subtree: true,
+                    childList: true
+                });
+
+            }
+        } catch (e) {
+            console.log('ERROR in livetv', e)
+        }
+    }, 1000); // end loopvar
+
+if (Spectv.channelIsQueued()) {
+    Spectv.MyDebug('channel is queued, reload URL, running playerInitJS');
+    Spectv.reloadStartupChannel();
+} else {
+    Spectv.setSpecPlayerReady();
+};
+
+function toggleGuide(s) {
+    Spectv.channelGuide(s)
+};
+function toggleMiniGuide(s) {
+    Spectv.channelGuide(s)
+};
+
+// check if video is ready, when ready create the guide database
+// if required
+var loopActiveDB = setInterval(function () {
+    try {
+        var vready = $('video')[0];
+        if (vready && vready.readyState == 4) {
+            Spectv.MyDebug('loopActiveDB,  build guide db if needed');
+            Spectv.sortMiniGuide();
+            clearInterval(loopActiveDB);
+        };
+    } catch (e) {
+        console.log('ERROR in sortMiniGuide monitoring', e);
+    }
+}, 500);
              """;
 
     String guideInitJS = """
@@ -245,11 +272,64 @@ public class MainActivity extends FragmentActivity  {
     public void onStop() {
         super.onStop();
         onStopEpochSeconds = System.currentTimeMillis() / 1000L;
+        var videoStopjs = """
+                $('video')[0].pause();
+                $('video')[0].currentTime = 0;
+                """;
+   //     startRepeatingTask();
+        spectrumPlayer.evaluateJavascript(videoStopjs,null);
+    //    spectrumPlayer.loadUrl("file:///android_asset/Spectv.html");
         MyDebug("onStop() epoch  seconds  = " + onStopEpochSeconds);
     }
 
     @Override
     public void onDestroy() {
+      //  stopRepeatingTask();
+        if (spectrumPlayer != null) {
+            // Stop any ongoing loading
+            spectrumPlayer.stopLoading();
+
+            // Clear history and cache
+            //  webView.clearHistory();
+            //   webView.clearCache(true);
+            //   webView.clearFormData();
+
+            // Remove from parent view to avoid leaks
+            ViewGroup parent = (ViewGroup) spectrumPlayer.getParent();
+            if (parent != null) {
+                parent.removeView(spectrumPlayer);
+            }
+
+            // Destroy the WebView completely
+            spectrumPlayer.removeAllViews();
+            spectrumPlayer.destroy();
+
+            // Nullify reference
+            spectrumPlayer = null;
+        }
+        if (spectrumGuide != null) {
+            // Stop any ongoing loading
+            spectrumGuide.stopLoading();
+
+            // Clear history and cache
+            //  webView.clearHistory();
+            //   webView.clearCache(true);
+            //   webView.clearFormData();
+
+            // Remove from parent view to avoid leaks
+            ViewGroup parent = (ViewGroup) spectrumGuide.getParent();
+            if (parent != null) {
+                parent.removeView(spectrumGuide);
+            }
+
+            // Destroy the WebView completely
+            spectrumGuide.removeAllViews();
+            spectrumGuide.destroy();
+
+            // Nullify reference
+            spectrumGuide = null;
+        }
+
         super.onDestroy();
         MyDebug("onDestroy()");
     }
@@ -270,6 +350,7 @@ public class MainActivity extends FragmentActivity  {
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         MyDebug("onNewIntent intent = " + intent);
+ //       stopRepeatingTask();
         String[] info = parseIntentFilter(intent);
         // info[0] is chnum, infor[1] is tssmid
         // check if restarting and what channel is requested
@@ -282,32 +363,44 @@ public class MainActivity extends FragmentActivity  {
         if (!info[0].isEmpty() && !curchnum.equals(info[0]) ) {
             MyDebug("onNewIntent playing new ch = " + info[0] );
             restartingFromDreaming = false;
+         //   spectrumPlayer.evaluateJavascript(videoPlayjs,null);
             miniGuidePlayChannel(info[0], info[1]);
             return;
         }
-        if (restartingFromDreaming) {
-            if (info[0].isEmpty() ) {
-                info[0] = curchnum;
-                info[1] = guideManager.getTsmid(curchnum);
-            }
+        if (info[0].isEmpty() ) {
+            info[0] = curchnum;
+            info[1] = guideManager.getTsmid(curchnum);
+        }
+       if (restartingFromDreaming) {
             restartingFromDreaming = false;
             specPlayerReady = false;
             MyDebug("onNewIntent navToChannel  ch = " + info[0] );
             navToChannel(info[1],info[0],false);
-        } else {
+       } else {
             MyDebug("onNewIntent  ch = " + info[0] + "already playing" );
-        }
+            var videoPlayjs = """
+               // reset mute if needed
+                $('video')[0].play();
+                """;
+
+           // set video to play
+            miniGuidePlayChannel(info[0], info[1]);
+        //    spectrumPlayer.evaluateJavascript(videoPlayjs,null);
+
+       }
     }
+
 
     private  void setRestartFromDreaming() {
         long currentsec = System.currentTimeMillis() / 1000L;
-        long reloadmax = 5 * 60;
+        long reloadmax = 5 * 60;restartingFromDreaming = false;
         MyDebug("setRestartFromDreaming  onStopEpochSeconds = " + onStopEpochSeconds );
         MyDebug("setRestartFromDreaming  sleep time = " + (currentsec - onStopEpochSeconds) );
         if ( (currentsec - onStopEpochSeconds) > reloadmax && onStopEpochSeconds != 0 ) {
             restartingFromDreaming = true;
         }
     }
+
 
     private String[] parseIntentFilter(Intent intent) {
         String[] info = new String[2];
@@ -333,8 +426,62 @@ public class MainActivity extends FragmentActivity  {
         }
         info[0] = channelNum;
         info[1] = channelId;
+        MyDebug("parseIntentFilter() channelNum = " + channelNum + " tsmid = " + channelId );
         return info;
     }
+
+
+  /*  public void TESTMUTE() {
+        String js = "";
+        TESTNUM = TESTNUM +1;
+        if ( TESTNUM > 3 ) {
+            TESTNUM = 1;
+        }
+
+        // test 1 mute both
+        if ( TESTNUM == 1 ) {
+            MyDebug("MuteTest() test 1 mute both");
+            js = """
+                    var specmute = $('#volume-control-icon').attr('aria-pressed');
+                    if (specmute === 'true') {
+                        $('video')[0].muted = true;
+                    } else {
+                       $('#volume-control-icon').click();
+                       $('video')[0].muted = true;
+                    }
+                    """;
+        }
+
+        // test 2 mute spect, unmute video
+        if ( TESTNUM == 2 ) {
+            MyDebug("MuteTest() test 2 mute spect, unmute video");
+            js = """
+                    var specmute = $('#volume-control-icon').attr('aria-pressed');
+                    if (specmute === 'true') {
+                        $('video')[0].muted = false;
+                    } else {
+                       $('#volume-control-icon').click();
+                       $('video')[0].muted = false;
+                    }
+                    """;
+        }
+
+        // test 3 unmute spec , mute video
+        if ( TESTNUM == 3 ) {
+            MyDebug("MuteTest() test 3 unmute spec , mute video");
+            js = """
+                    var specmute = $('#volume-control-icon').attr('aria-pressed');
+                    if (specmute === 'false') {
+                        $('video')[0].muted = true;
+                    } else {
+                       $('#volume-control-icon').click();
+                       $('video')[0].muted = true;
+                    }
+                    """;
+        }
+        spectrumPlayer.evaluateJavascript(js, null);
+    }
+*/
 
     @SuppressLint("RestrictedApi")
     @Override
@@ -467,9 +614,10 @@ public class MainActivity extends FragmentActivity  {
                     event.getKeyCode() == KeyEvent.KEYCODE_DEL ||
                     event.getKeyCode() == KeyEvent.KEYCODE_DPAD_LEFT  ) &&
                     spectrumPlayer.getVisibility() == View.VISIBLE &&
-                    !miniGuideIsShowing) {
+                    !miniGuideIsShowing && spectrumGuide.getVisibility() == View.GONE ) {
                 String newchannel = sharedPref.getString("prevChannel",DEFAULTCHANNEL);
                 EpgMapData epg = guideManager.getGuideEntry(newchannel);
+            //    TESTMUTE();
                 miniGuidePlayChannel(epg.chnum, epg.tsmid);
                 return true;
             }
@@ -738,16 +886,27 @@ public class MainActivity extends FragmentActivity  {
                     String playChannelJS =
                             // set focus after DOM settles
                             "function waitForDOM() {" +
+                                    "$('video')[0].play(); " +
+                                    "$('video')[0].volume = 1.0;" +
                                     "$('" + cssid + "').focus();" +
                                     "$('" + cssid + "').click();" +
                                     "$('mini-guide').last().removeClass('mini-guide-open');" +
                                     "$('video').eq(0).focus(); " +
-                                    "};" +
-                                    "$('ul#channel-browser.channel-list.ng-scope').animate({ scrollTop: " +
-                                    offset + "} , '100', function () { " +
-                                    "   setTimeout(waitForDOM, 20);" +
-                                    "   }" +
-                                    ");";
+                            "};" +
+
+                                    // force unmute
+                                    " var status = $('#volume-control-icon').attr('aria-pressed'); " +
+                                    " var status = $('#volume-control-icon').attr('aria-pressed'); " +
+                                    " var videomute = $('video')[0].muted;" +
+                                    " if (status === 'true' || videomute ) { " +
+                                    "     Spectv.navToChannel(" + tsmid + "," + chnum + " , true ); " +
+                                    "     Spectv.MyDebug(`audio mutted, reload url`); " +
+                                    "} else {" +
+                                          "$('ul#channel-browser.channel-list.ng-scope').animate({ scrollTop: " +
+                                          offset + "} , '100', function () { " +
+                                          "   setTimeout(waitForDOM, 20);" +
+                                          "   }" +
+                                    ");}";
 
                     spectrumPlayer.evaluateJavascript(playChannelJS, null);
                 }
@@ -782,13 +941,21 @@ public class MainActivity extends FragmentActivity  {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
+                    var goBackJS = """
+                            if ( history.length > 1 ) {
+                              history.back();
+                              Spectv.MyDebug(' navToChannel() going back ');
+                            } else {
+                              Spectv.MyDebug(' navToChannel() no history back ');
+                            }
+                            """;
                     saveLastChannel(channelId,chNum);
+                    if (goback) {
+                        spectrumGuide.evaluateJavascript(goBackJS, null);
+                    }
                     spectrumPlayer.loadUrl(baseLiveChannelURL + channelId);
                     spectrumGuide.setVisibility(View.GONE);
-                    if (goback) {
-                        spectrumGuide.evaluateJavascript("history.back();", null);
-                    }
-                }
+                 }
             });
         } catch (Exception e) {
             Log.d("ERROR in live channel nav", e.toString());
@@ -880,6 +1047,9 @@ public class MainActivity extends FragmentActivity  {
                 MyDebug("loaded url = " + url );
                 if ( url.contains("/login") && !url.contains("/login/auto")) {
                     loginRequired = true;
+                }
+                else if  (url.contains("/android_asset") ) {
+                     return;
                 } else {
                     loginRequired = false;
                     spectrumPlayer.evaluateJavascript(playerInitJS, null);
@@ -1049,6 +1219,7 @@ public class MainActivity extends FragmentActivity  {
                                           // move past header , footers and last entry
                                           var nextpos = lastoffset + rowpx + rowpx + rowpx;
                                           $('ul#channel-browser.channel-list.ng-scope').scrollTop(nextpos.toString());
+                                          $('mini-guide').last().addClass('mini-guide-open');
                                        };
                                        if (SCANDONE) {
                                           Spectv.setMiniGuideLoaded();
