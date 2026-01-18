@@ -1,4 +1,4 @@
-# SpectrumTV_webview V2.0.5b
+# SpectrumTV_webview V2.0.5c
 Spectrum TV App for Android TV platform.
 Just a simple webview that launches the watch.spectrum.net website to be able to watch live tv.
 Manipulates javascript to hide unnecessary html elements, etc...
@@ -61,6 +61,10 @@ V2.0.5b
 - Webview Cleanup when app moved to background or closed
 - Fix 'Continue' fails during initial login due to Spectrum HTML changes
 
+V2.0.5c
+- Update user-agent to "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0"
+to fix Spectrum 'browse not supported error'
+
 ### Installation
 - On first startup, after the initial channel is loaded a scan of the miniguide will be started. <br>
   A message will be displayed "Scanning MiniGuide" which will close when the scan has completed, around 45 seconds.<br>
@@ -71,11 +75,7 @@ V2.0.5b
 2. From the Application settings on the device, Force stop "Spectv", Delete the application data, restart "Spectv"
 
 ### Assets
-<a href="https://github.com/brodfueh/SpectrumTV_webview/releases/download/Spectv-2.0.5b/spectv.2.0.5b.apk">
-Download Spectv v2.0.5b  apk</a>
-
-
-
+<a href="https://github.com/brodfueh/SpectrumTV_webview/releases/download/Spectv-v2.0.5c/spectv-2.0.5c.apk">Download Spectv v2.0.5c apk</a>
 
 ### Notes
 1. The application has only been tested on "Fire TV Stick 4K", "Chromecast with Google TV - 4K", "MECOOL KM2 PLUS Deluxe" and "Onn Google TV 4K"

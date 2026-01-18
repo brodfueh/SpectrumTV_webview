@@ -31,7 +31,7 @@ import androidx.fragment.app.FragmentActivity;
  */
 public class MainActivity extends FragmentActivity  {
 
-    final String uaString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36";
+    final String uaString = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:147.0) Gecko/20100101 Firefox/147.0";
     final String guideUrl = "https://watch.spectrum.net/guide";
     final String baseLiveChannelURL = "https://watch.spectrum.net/livetv?tmsid=";
     final String newSessionURL = "https://watch.spectrum.net/?sessionOverride=true";
@@ -1068,7 +1068,9 @@ var loopActiveDB = setInterval(function () {
         spectrumGuide.setVisibility(View.GONE);
 
         spectrumGuide.setBackgroundColor(Color.TRANSPARENT);
-        spectrumGuide.setLayerType(WebView.LAYER_TYPE_SOFTWARE, null);
+     //   spectrumGuide.setLayerType(WebView.LAYER_TYPE_SOFTWARE, null);
+        spectrumGuide.setLayerType(WebView.LAYER_TYPE_HARDWARE, null);
+
 
         spectrumGuide.setWebChromeClient(new WebChromeClient() {
 //            @Override
