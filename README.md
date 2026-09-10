@@ -1,3 +1,7 @@
+# SpectrumTV_webview V2.1
+Major updates , includes new scan function and converts spectrum miniguide to an android listview with build-in filters for 'all channels' , 'favorites' and 'recent'.
+Would like to get feedback on new miniguide using android listview.
+
 # SpectrumTV_webview V2.0.4
 Spectrum TV App for Android TV platform.
 Just a simple webview that launches the watch.spectrum.net website to be able to watch live tv.

@@ -5,4 +5,9 @@
     <color name="search_opaque">#ffaa3f</color>
     <color name="selected_background">#ffaa3f</color>
     <color name="default_background">#3d3d3d</color>
+
+        <color name="colorPressed">#FF0000</color> <!-- Red when pressed -->
+        <color name="colorFocused">#00FF00</color> <!-- Green when focused -->
+        <color name="colorSelected">#0000FF</color> <!-- Blue when selected -->
+        <color name="colorDefault">#80293878</color> <!-- White by default -->
 </resources>

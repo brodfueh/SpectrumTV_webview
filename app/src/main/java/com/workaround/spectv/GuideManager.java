@@ -8,11 +8,15 @@ import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.widget.Toast;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
 import java.io.FileOutputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -21,16 +25,16 @@ public class GuideManager {
     protected Context context;
     SharedPreferences sharedPref;
     SharedPreferences.Editor sharedPrefEdit;
-    final String DBVERSION = "V1.0";
+    final String DBVERSION = "V1.1";
     final String ROOTNODE = "-1";  // add a root entry "-1" that has head/nextChnum tail/prevChNum
-    final Boolean DEBUGON = false;
+    final Boolean DEBUGON = true;
     final String GuideCacheFile = "GuideCache.dat";
     boolean guideCacheIsReady = false;
-    boolean miniGuideScanDone = false;
     LinkedHashMap<String, EpgMapData> guideHashMap = new LinkedHashMap<String, EpgMapData>();
     LinkedHashMap<String, String> chNameToChNum = new LinkedHashMap<String, String>();
     LinkedHashMap<String, String> tsmIDToChNum = new LinkedHashMap<String, String>();
     LinkedHashMap<String, EpgMapData> miniGuideBuffer = new LinkedHashMap<String, EpgMapData>();
+    ArrayList <EpgMapData> miniGuideList = new ArrayList<>();
 
     public GuideManager(Context mycontext){
         context = mycontext.getApplicationContext();
@@ -47,12 +51,19 @@ public class GuideManager {
                 ObjectInputStream is = new ObjectInputStream(context.openFileInput(GuideCacheFile));
                 guideHashMap = (LinkedHashMap<String, EpgMapData>) is.readObject();
                 // merge done, create channel up, down list also tsmid to chnum map
+                for (Map.Entry<String, EpgMapData> entry : guideHashMap.entrySet()) {
+                 //   System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
+                    tsmIDToChNum.put(entry.getValue().tsmid,entry.getKey());
+                }
+                /*
                 guideHashMap.forEach((key, value) -> {
                     tsmIDToChNum.put(value.tsmid,key);
                 });
+                 */
+                initMiniGuideList();
                 guideCacheIsReady = true;
-                miniGuideScanDone = true;
-                myDebugDump();
+       //         miniGuideScanDone = true;
+         //       myDebugDump();
             } catch (Exception e) {
                 MyDebug("read hashmap failed " + e);
             }
@@ -60,7 +71,7 @@ public class GuideManager {
         }
     }
 
-    public void addMiniGuideEntry(String chnum, String chname, String css, String offsetpx) {
+    private void addMiniGuideEntry(String chnum, String chname, String css, String offsetpx, String imgurl) {
 
         String[] parts = css.split("-");
         if ( miniGuideBuffer.containsKey(chnum)) {
@@ -69,7 +80,7 @@ public class GuideManager {
         int pos = parts.length - 1;
         String tsmid = parts[pos];
         String cssid = "#" + css;
-        miniGuideBuffer.put(chnum,new EpgMapData(offsetpx,chnum,tsmid,chname,cssid));
+        miniGuideBuffer.put(chnum,new EpgMapData(offsetpx,chnum,tsmid,chname,cssid,imgurl));
         chNameToChNum.put(chname,chnum);
     }
 
@@ -140,14 +151,66 @@ public class GuideManager {
         return retval;
     }
 
+    public void initMiniGuideList() {
+        miniGuideList = new ArrayList<>();
+        boolean done = false;
+        String key = guideHashMap.get(ROOTNODE).nextChNum;
+        int i = 0;
+        while (!done) {
+            EpgMapData d = guideHashMap.get(key);
+            miniGuideList.add(d);
+            if (d.chnum.equals(d.nextChNum)) {
+                done = true;
+            } else {
+                key = guideHashMap.get(d.nextChNum).chnum;
+                i++;
+            }
+        }
+    }
+
+    public void updateMiniGuideList(String jsondata) {
+        try {
+            //    MyDebug("Runnable --  updateMiniGuideList miniGuideList size =  " + miniGuideList.size());
+            JSONObject json = new JSONObject(jsondata);
+            Iterator<String> keys = json.keys();
+            while (keys.hasNext()) {
+                String key = keys.next();
+                try {
+                    if (guideHashMap.containsKey(key)) {
+                        EpgMapData epg = guideHashMap.get(key);
+                        epg.onnow = json.getJSONObject(key).getString("onnow");
+                        epg.episode = json.getJSONObject(key).getString("episode");
+                    }
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+      /*      json.keys().forEachRemaining(key -> {
+                try {
+                    if (guideHashMap.containsKey(key)) {
+                        EpgMapData epg = guideHashMap.get(key);
+                        epg.onnow = json.getJSONObject(key).getString("onnow");
+                        epg.episode = json.getJSONObject(key).getString("episode");
+                    }
+                } catch (JSONException e) {
+                    throw new RuntimeException(e);
+                }
+
+            });*/
+        } catch (JSONException e) {
+            MyDebug("JSON --  updateMiniGuideList exception " + e.toString());
+            throw new RuntimeException(e);
+        }
+    }
+
+    public ArrayList<EpgMapData> getMiniGuideList() {
+        return miniGuideList;
+    }
 
     public boolean guideCacheIsReady() {
         return guideCacheIsReady;
     }
 
-    public boolean miniGuideScanDone() {
-        return miniGuideScanDone;
-    }
     static class CompareChnum implements java.util.Comparator<String> {
         @Override
         public int compare( String a, String b) {
@@ -163,12 +226,21 @@ public class GuideManager {
 
         try {
             // create channel up, down list also tsmid to chnum map
+            for (Map.Entry<String, EpgMapData> entry : miniGuideBuffer.entrySet()) {
+              //  System.out.println("Key: " + entry.getKey() + ", Value: " + entry.getValue());
+                chUpDownList.add(entry.getKey());
+                tsmIDToChNum.put(entry.getValue().tsmid,entry.getKey());
+            }
+
+/*
             miniGuideBuffer.forEach((key, value) -> {
                 chUpDownList.add(key);
                 tsmIDToChNum.put(value.tsmid,key);
             });
 
-            // sort the buffer by channel number
+ */
+
+           // sort the buffer by channel number
             Collections.sort(chUpDownList, new CompareChnum());
             // add position back pointer to sorted channel list
             for (int i = 0; i < chUpDownList.size(); i++) {
@@ -186,21 +258,25 @@ public class GuideManager {
                 }
             }
             // add a root entry "-1" that has head/nextChnum tail/prevChNum
-            EpgMapData root = new EpgMapData("0",ROOTNODE,"","","");
+            EpgMapData root = new EpgMapData("0",ROOTNODE,"","","","");
             root.nextChNum = chUpDownList.get(0);
             root.prevChNum = chUpDownList.get(chUpDownList.size()-1);
             miniGuideBuffer.put(ROOTNODE,root);
             // set guide hashmap to miniguide buffer all done
             guideHashMap = miniGuideBuffer;
 
-            // set default channel to rootnode , nextChnum
-            sharedPrefEdit.putString("currentChannel", root.nextChNum);
-            sharedPrefEdit.putString("prevChannel", root.nextChNum);
-            sharedPrefEdit.apply();
+            // set default channel to rootnode , nextChnum, unless already set ie. doing rescan
+            String curchan = sharedPref.getString("currentChannel","");
+            if ( curchan.isEmpty()) {
+                sharedPrefEdit.putString("currentChannel", root.nextChNum);
+                sharedPrefEdit.putString("prevChannel", root.nextChNum);
+                sharedPrefEdit.apply();
+            }
+            initMiniGuideList();
 
             guideCacheIsReady = true;
             MyDebug("merged mini buffer size =" + String.valueOf(miniGuideBuffer.size()));
-            myDebugDump();
+          //  myDebugDump();
             Toast.makeText(context, "Scan Guide Data Completed "+
                             "\n Found " +  numberOfChannels() + " channels",
                     Toast.LENGTH_LONG).show();
@@ -218,9 +294,52 @@ public class GuideManager {
         }
     }
 
-    public void setMiniGuideLoaded() {
-        MyDebug("In setMiniGuideLoaded() ");
-        miniGuideScanDone = true;
+
+    public void initMiniGuideData(String jsonData) {
+        // add all the miniguide data to the buffer, jsonData contains scan of miniguide
+        MyDebug("In initMiniGuideData() ");
+        // create a new buffer for the data
+        miniGuideBuffer = new LinkedHashMap<>();
+        chNameToChNum = new LinkedHashMap<>();
+        tsmIDToChNum = new LinkedHashMap<>();
+        try {
+            //    MyDebug("Runnable --  updateMiniGuideList miniGuideList size =  " + miniGuideList.size());
+            JSONObject json = new JSONObject(jsonData);
+            Iterator<String> keys = json.keys();
+            while (keys.hasNext()) {
+                String chnum = keys.next();
+                try {
+                    String chname, css, offsetpx, imgurl;
+                    chname = json.getJSONObject(chnum).getString("chname");
+                    css = json.getJSONObject(chnum).getString("css");
+                    offsetpx = json.getJSONObject(chnum).getString("offset");
+                    imgurl = json.getJSONObject(chnum).getString("imgurl");
+                    addMiniGuideEntry(chnum, chname, css, offsetpx, imgurl);
+                } catch (JSONException e) {
+                    MyDebug("JSON --  updateMiniGuideList exception in chnum " + chnum);
+                    throw new RuntimeException(e);
+                }
+            }
+
+      /*      json.keys().forEachRemaining(chnum -> {
+                try {
+                    String chname, css, offsetpx, imgurl;
+                    chname = json.getJSONObject(chnum).getString("chname");
+                    css = json.getJSONObject(chnum).getString("css");
+                    offsetpx = json.getJSONObject(chnum).getString("offset");
+                    imgurl = json.getJSONObject(chnum).getString("imgurl");
+                    addMiniGuideEntry(chnum, chname, css, offsetpx, imgurl);
+                } catch (JSONException e) {
+                    MyDebug("JSON --  updateMiniGuideList exception in chnum " + chnum);
+                    throw new RuntimeException(e);
+                }
+
+            });
+       */
+        } catch (JSONException e) {
+            MyDebug("JSON --  updateMiniGuideList exception " + e.toString());
+            throw new RuntimeException(e);
+        }
         saveGuideData();
     }
 
@@ -233,9 +352,9 @@ public class GuideManager {
         int i = 0;
         while (!done) {
             EpgMapData d =  guideHashMap.get(key);
-            s = String.format("%7s %7s %7s %7s %7s %7s %7s %9s",
+            s = String.format("%7s %7s %7s %7s %7s %7s %7s %9s %20s",
                     String.valueOf(i),d.chnum,d.prevChNum,d.nextChNum,
-                    String.valueOf(d.chindex),d.name,d.tsmid,d.offset);
+                    String.valueOf(d.chindex),d.name,d.tsmid,d.offset,d.imgsrc);
             MyDebug(s);
             if (d.chnum.equals(d.nextChNum)) {
                 done = true;
@@ -255,9 +374,6 @@ public class GuideManager {
         }
 
     }
-
-
-    @JavascriptInterface
     public void MyDebug(String s1) {
         if (DEBUGON) {
             Log.d("SPECDEBUG", s1 );
